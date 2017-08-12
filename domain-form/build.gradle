@@ -1,0 +1,40 @@
+buildscript {
+	ext {
+		springBootVersion = '1.5.6.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = 1.8
+
+compileJava.dependsOn processResources
+processResources.destinationDir = compileJava.destinationDir
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	compile('org.springframework.boot:spring-boot-starter-thymeleaf')
+	compile('org.springframework.boot:spring-boot-starter-web')
+	compile('org.springframework.boot:spring-boot-starter-jdbc')
+	compile("org.seasar.doma:doma:2.15.0")
+	compile('org.seasar.doma.boot:doma-spring-boot-starter:1.1.1')
+	compile('com.h2database:h2')
+	compile('org.flywaydb:flyway-core')
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Hello SpringBoot</title>
+</head>
+<body>
+    <h1>Hello Spring Boot!!</h1>
+    <form th:action="@{/hello}" method="post" th:object="${helloForm}">
+        <input type="number" th:field="*{userId}" />
+        <input type="text"   th:field="*{name}" />
+        <input type="submit" value="検索" />
+    </form>
+    <br/>
+    <table border="1">
+        <tr>
+            <th>ID</th><th>Name</th>
+        </tr>
+        <tr th:each="user : ${users}">
+            <td th:text="${user.id}">0</td>
+            <td th:text="${user.name}">tanaka</td>
+        </tr>
+    </table>
+</body>
+</html>
