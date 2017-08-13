@@ -10,7 +10,7 @@ Domaのドメインクラスを、Formクラスのフィールドとして使用
 
 ## どうすればいいか
 
-ドメインクラスに、Stringを引数にとるファクトリメソッド、またはコンストラクタを定義する。
+ドメインクラスに、Stringを引数にとるpublic staticなファクトリメソッド、またはコンストラクタを定義する。
 
 ```java
 @Domain(valueType = Long.class, factoryMethod = "of")
@@ -36,4 +36,25 @@ public class ID<E> {
 }
 ```
 
-こうすることで、Spring側がファクトリメソッドを呼び出してインスタンス化してくれる。
+こうすることで、Spring側がファクトリメソッドを呼び出してインスタンス化してくれる。<br/>
+ただし、ファクトリメソッドの場合、メソッド名は `valueOf`, `of`, `from` の何れかである必要がある。（うらがみさん指摘）<br/>
+
+* [ObjectToObjectConverter.determineFactoryMethod](https://github.com/spring-projects/spring-framework/blob/master/spring-core/src/main/java/org/springframework/core/convert/support/ObjectToObjectConverter.java#L180)
+
+## publicなフィールドに直接バインドする場合
+
+`DataBinder.initDirectFieldAccess` を使用することで、getter/setter 無しのフィールドにバインドしてくれる。<br/>
+うらがみさんがサンプルソースを作成してくださった。
+
+* https://github.com/backpaper0/spring-boot-sandbox/commit/41bacf25aefa0b7e4f581a33c7b918eef7396342
+
+```java
+@ControllerAdvice
+public class MyAdvice {
+    @InitBinder
+    void init(final WebDataBinder binder) {
+        binder.initDirectFieldAccess();
+    }
+}
+```
+
