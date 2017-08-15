@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>管理者エラーページ</title>
+</head>
+<body>
+    <h1>Error Page</h1>
+    <table border="1">
+        <tr>
+            <th>ErrorCode</th>
+            <th>ErrorMessage</th>
+            <th>ErrorClass</th>
+            <th>Method</th>
+        </tr>
+        <tr>
+            <td th:text="${errorCode}">エラーコード</td>
+            <td th:text="${errorMessage}">エラーメッセージ</td>
+            <td th:text="${errorClass}">エラークラス</td>
+            <td th:text="${method}">httpメソッド</td>
+        </tr>
+    </table>
+    <form th:action="@{/admin/hello}" method="post">
+        <input type="submit" value="post" />
+    </form>
+</body>
+</html>
