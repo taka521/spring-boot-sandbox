@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>メッセージリソースの検証</title>
+</head>
+<body>
+    <p th:text="${msg001}"></p>
+    <p th:text="${msg002}"></p>
+    <p th:text="${msg003}"></p>
+    <p th:text="#{INFO.MSG0003('佐藤')}"></p>
+    <p th:text="#{INFO.MSG0003(${username})}"></p>
+</body>
+</html>
