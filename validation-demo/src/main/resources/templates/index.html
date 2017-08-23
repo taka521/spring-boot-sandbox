@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja"
+      xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>バリデーションデモ</title>
+</head>
+<body>
+
+    <form th:action="@{/}" method="post" th:object="${demoForm}">
+        <p>
+            <label id="userId">UserId:</label>
+            <input type="text" th:value="*{userId}" name="userId" id="userId"/>
+        </p>
+        <p>
+            <label id="password">Password:</label>
+            <input type="text" th:value="*{password}" name="password" id="password"/>
+        </p>
+        <p>
+            <label id="date">Date:</label>
+            <input type="date" th:value="*{date}" name="date" id="date"/>
+        </p>
+        <p>
+            <input type="submit" value="send" />
+        </p>
+    </form>
+
+</body>
+</html>
