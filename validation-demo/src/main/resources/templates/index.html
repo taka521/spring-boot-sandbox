@@ -9,6 +9,7 @@
 <body>
 
     <form th:action="@{/}" method="post" th:object="${demoForm}">
+        <p th:each="error : ${errors}" th:text="${error.defaultMessage}"></p>
         <p>
             <label id="userId">UserId:</label>
             <input type="text" th:value="*{userId}" name="userId" id="userId"/>

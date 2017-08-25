@@ -1,20 +1,17 @@
 package com.example.validation_demo.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public class UserId extends Domain<Long> {
 
-@Getter
-@AllArgsConstructor
-public class UserId {
+    private UserId(Long value) {
+        super(value);
+    }
 
-    private final Long value;
+    public static UserId of(final Long value) {
+        return new UserId(value);
+    }
 
     public static UserId of(final String value) {
         return new UserId(Long.valueOf(value));
     }
 
-    @Override
-    public String toString(){
-        return value.toString();
-    }
 }
