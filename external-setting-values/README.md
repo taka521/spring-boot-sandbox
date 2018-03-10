@@ -33,3 +33,30 @@ Springにおける外部設定値について検証するためのプロジェ�
 > | `@PropertySource` | `@PropertySource`に指定した任意のプロパティファイルに「`設定名=値`」の形式で指定する。 |
 
 とりあえず、試してみる。
+
+## 設定値の取得方法について
+
+### `@Value` を使用する
+
+`@Value` アノテーションを使用することで、外部設定値を取得することができる。  
+`@Value("${キー:デフォルト値}")` の形式で定義する。
+
+```java
+public class WebSettingValues {
+    
+    @Value("${app.timeout.session:3000}")
+    private int sessionTimeout;
+    
+    // ...
+}
+```
+  
+注釈可能なのは
+
+* フィールド
+* コンストラクタ引数
+* setter メソッド
+
+の何れかで、前提としてDIコンテナで管理されるクラスでないといけない。  
+なお、デフォルト値は省略可能だが、
+外部設定値として定義されていない場合にはエラー（`UnsatisfiedDependencyException`がスロー）になる
