@@ -42,6 +42,7 @@ Springにおける外部設定値について検証するためのプロジェ�
 `@Value("${キー:デフォルト値}")` の形式で定義する。
 
 ```java
+@Component
 public class WebSettingValues {
     
     @Value("${app.timeout.session:3000}")
@@ -60,3 +61,44 @@ public class WebSettingValues {
 の何れかで、前提としてDIコンテナで管理されるクラスでないといけない。  
 なお、デフォルト値は省略可能だが、
 外部設定値として定義されていない場合にはエラー（`UnsatisfiedDependencyException`がスロー）になる
+
+
+### type-safe Configuration Properties を利用する
+
+`@Value` と同じく、DIコンテナで管理されているクラスに対して有効。
+外部設定値を注釈したいクラス定義に `@ConfigurationProperties` を注釈する。
+
+```java
+@Component
+@ConfigurationProperties(prefix = "app.database")
+public class DatabaseSettings {
+
+    private String host = "dummyHost";         // app.database.host の値が注入
+    private String username = "dummyUsername"; // app.database.username の値が注入
+    private String password = "dummyPassword"; // app.database.password の値が注入
+
+    // ...
+}
+```
+
+`prefix` 属性を指定すると、`prefix + . + フィールド名` の形式で定義した外部設定値が注入される。  
+（`prefix` のデフォルト値は `""`）
+
+
+### `Environment` インターフェースを利用する
+
+SpringFramework は `Environment` インターフェースを提供しており、
+プロパティ名を指定して外部設定値を取得することができる。
+
+```java
+@Component
+class MyComponent {
+    
+    @Autowired
+    private Environment environment;
+    
+    public void execute(){
+        String message = environment.getProperty("application.message");
+    }
+}
+```
