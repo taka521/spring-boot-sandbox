@@ -30,10 +30,21 @@ class SimpleComponent {
 	@Autowired
 	private ApplicationValues applicationValues;
 
+	@Autowired
+	private DatabaseSettings databaseSettings;
+
 	public void execute(){
+		Console.startLog(applicationValues.getClass());
 		Console.log("host", applicationValues.getHost());
 		Console.log("sessionTimeout", applicationValues.getSessionTimeout());
 		Console.log("requestTimeout", applicationValues.getRequestTimeout());
+		Console.endLog();
+
+		Console.startLog(databaseSettings.getClass());
+		Console.log("host", databaseSettings.getHost());
+		Console.log("username", databaseSettings.getUsername());
+		Console.log("password", databaseSettings.getPassword());
+		Console.endLog();
 	}
 
 }
