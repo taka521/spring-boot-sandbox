@@ -5,6 +5,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @SpringBootApplication
@@ -33,17 +34,25 @@ class SimpleComponent {
 	@Autowired
 	private DatabaseSettings databaseSettings;
 
+	@Autowired
+	private Environment environment;
+
+
 	public void execute(){
-		Console.startLog(applicationValues.getClass());
+		Console.startLog(ApplicationValues.class);
 		Console.log("host", applicationValues.getHost());
 		Console.log("sessionTimeout", applicationValues.getSessionTimeout());
 		Console.log("requestTimeout", applicationValues.getRequestTimeout());
 		Console.endLog();
 
-		Console.startLog(databaseSettings.getClass());
+		Console.startLog(DatabaseSettings.class);
 		Console.log("host", databaseSettings.getHost());
 		Console.log("username", databaseSettings.getUsername());
 		Console.log("password", databaseSettings.getPassword());
+		Console.endLog();
+
+		Console.startLog(Environment.class);
+		Console.log("message", environment.getProperty("app.environment.messaga"));
 		Console.endLog();
 	}
 
