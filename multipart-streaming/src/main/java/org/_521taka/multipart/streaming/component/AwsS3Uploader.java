@@ -2,6 +2,7 @@ package org._521taka.multipart.streaming.component;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.ClientConfiguration;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.Executors;
 
 /**
  * AWS S3アップロードコンポーネント
@@ -35,6 +37,8 @@ public class AwsS3Uploader {
 
     /** ロガー */
     private static final Logger logger = LoggerFactory.getLogger(AwsS3Uploader.class);
+
+    private static final long MINIMUMi_UPLOAD_PART_SIZE = 5L * 1024L * 1024L;
 
     /** S3設定情報 */
     private final AmazonS3Setting s3Setting;
@@ -57,9 +61,10 @@ public class AwsS3Uploader {
      *
      * @return アップロード結果オブジェクト
      */
-    public PutObjectResult singleUpload(final InputStream source, final ContentType contentType) {
+    public PutObjectResult singleUpload(final InputStream source, final ContentType contentType,
+                                        final int contentLength) {
 
-        final PutObjectRequest request = this.createPutObjectRequest(source, contentType);
+        final PutObjectRequest request = this.createPutObjectRequest(source, contentType, contentLength);
         final AmazonS3 s3 = this.auth();
 
         try {
@@ -87,14 +92,19 @@ public class AwsS3Uploader {
      *
      * @return アップロード結果オブジェクト
      */
-    public UploadResult multipartUpload(final InputStream multipartSource, final ContentType contentType) {
-        final PutObjectRequest request = this.createPutObjectRequest(multipartSource, contentType);
+    public UploadResult multipartUpload(final InputStream multipartSource, final ContentType contentType,
+                                        final int contentLength) {
+        final PutObjectRequest request = this.createPutObjectRequest(multipartSource, contentType, contentLength);
         final AmazonS3 s3 = this.auth();
-        final TransferManager manager = TransferManagerBuilder.standard().withS3Client(s3).build();
+        final TransferManager manager = TransferManagerBuilder.standard()
+                .withS3Client(s3)
+                .build();
 
         try {
             final Upload upload = manager.upload(request);
-            return upload.waitForUploadResult();
+            final UploadResult result = upload.waitForUploadResult();
+            manager.shutdownNow();
+            return result;
         } catch (AmazonServiceException e) {
             logger.error(e.getErrorMessage(), e);
             throw e;
@@ -126,15 +136,18 @@ public class AwsS3Uploader {
      *
      * @return プットオブジェクト
      */
-    private PutObjectRequest createPutObjectRequest(final InputStream source, final ContentType contentType) {
+    private PutObjectRequest createPutObjectRequest(final InputStream source, final ContentType contentType,
+                                                    final int contentLength) {
 
         // Content-type と タイトルを設定
         final ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentType(contentType.getValue());
+        metadata.setContentLength(contentLength);
 
         // バケット名、アクセスキー、アップロードファイル、メタデータを元にPutObjectを生成
         // なお、総転送数をログに出力するリスナーを設定。
         final PutObjectRequest request = new PutObjectRequest(this.s3Setting.getBucketName(), now(), source, metadata);
+
         request.setGeneralProgressListener(
                 progressEvent -> logger.debug("Transferred bytes: {}", progressEvent.getBytesTransferred()));
 

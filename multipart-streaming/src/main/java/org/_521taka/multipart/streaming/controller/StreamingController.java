@@ -1,7 +1,9 @@
 package org._521taka.multipart.streaming.controller;
 
+import org._521taka.multipart.streaming.constant.ContentType;
 import org._521taka.multipart.streaming.filter.SizeCheckInputStreamFilter;
 import org._521taka.multipart.streaming.service.Aws3SUploadService;
+import org._521taka.multipart.streaming.service.Aws3SUploadServiceRequest;
 import org._521taka.multipart.streaming.service.StreamingService;
 import org.apache.tomcat.util.http.fileupload.FileItemIterator;
 import org.apache.tomcat.util.http.fileupload.FileItemStream;
@@ -11,10 +13,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.BufferedInputStream;
 import java.io.FilterInputStream;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,9 +36,9 @@ public class StreamingController {
     private static final Logger logger = LoggerFactory.getLogger(StreamingController.class);
 
     /** ストリーミング上限サイズ */
-    private static final long STREAMING_LIMIT_SIZE = 1024L * 1024L;
+    private static final long STREAMING_LIMIT_SIZE = 1024L * 1024L * 1024L * 1024L;
 
-    /**　アップロードサービス */
+    /** 　アップロードサービス */
     private Aws3SUploadService uploadService;
 
     @Autowired
@@ -40,8 +46,20 @@ public class StreamingController {
         this.uploadService = uploadService;
     }
 
+    /**
+     * マルチパートリクエストをストリーミングするコントローラ。
+     *
+     * @param fileSize ファイルサイズ
+     * @param request  リクエストコンテキスト
+     *
+     * @return キーがファイル名、バリューがEタグのMap
+     *
+     * @throws Exception 例外
+     */
     @PostMapping("/streaming")
-    public Map<String, String> streaming(final HttpServletRequest request) throws Exception {
+    public Map<String, String> streaming(
+            @RequestHeader(name = "X-FILE-SIZE", required = false, defaultValue = "0") final int fileSize,
+            final HttpServletRequest request) throws Exception {
 
         // マルチパートのリクエストであるか
         if (!ServletFileUpload.isMultipartContent(request)) {
@@ -59,13 +77,15 @@ public class StreamingController {
             logger.info("field name : {}", itemStream.getFieldName());
             logger.info("file name : {}", itemStream.getName());
             logger.info("content type : {}", itemStream.getContentType());
+            if (!itemStream.getFieldName().equals("file")) continue;
 
             // ストリーミングサイズの上限をチェックするためのフィルター
             final FilterInputStream filterInputStream = new SizeCheckInputStreamFilter(itemStream.openStream(),
                                                                                        STREAMING_LIMIT_SIZE);
-
             // AWS 3Sへアップロードする
-            final String eTag = this.uploadService.execute(filterInputStream, itemStream.getContentType(), 0);
+            final String eTag = this.uploadService.execute(
+                    new Aws3SUploadServiceRequest(filterInputStream, ContentType.of(itemStream.getContentType()),
+                                                  fileSize));
             uploadResult.put(itemStream.getName(), eTag);
         } while (fileItemIterator.hasNext());
 

@@ -3,13 +3,10 @@ package org._521taka.multipart.streaming.service;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.transfer.model.UploadResult;
 import org._521taka.multipart.streaming.component.AwsS3Uploader;
-import org._521taka.multipart.streaming.constant.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.io.InputStream;
 
 /**
  * AWS S3アップロードサービス
@@ -40,14 +37,20 @@ public class Aws3SUploadService {
      *
      * @return Eタグ
      */
-    public String execute(final InputStream source, final String contentType, final int fileSize) {
+    public String execute(final Aws3SUploadServiceRequest request) {
 
-        if (fileSize >= MULTIPART_UPLOAD_MIN_SIZE) {
-            final UploadResult result = this.uploader.multipartUpload(source, ContentType.of(contentType));
+        // todo: イケてないのであとでリファクタリング
+        if (request.getContentLength() >= MULTIPART_UPLOAD_MIN_SIZE) {
+            logger.info("select multipart upload.");
+            final UploadResult result = this.uploader.multipartUpload(request.getSource(), request.getContentType(),
+                                                                      request.getContentLength());
             return result.getETag();
         } else {
-            final PutObjectResult result = this.uploader.singleUpload(source, ContentType.of(contentType));
+            logger.info("select single upload.");
+            final PutObjectResult result = this.uploader.singleUpload(request.getSource(), request.getContentType(),
+                                                                      request.getContentLength());
             return result.getETag();
         }
     }
+
 }
