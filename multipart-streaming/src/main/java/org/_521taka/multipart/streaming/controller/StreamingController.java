@@ -1,6 +1,7 @@
 package org._521taka.multipart.streaming.controller;
 
 import org._521taka.multipart.streaming.filter.SizeCheckInputStreamFilter;
+import org._521taka.multipart.streaming.service.Aws3SUploadService;
 import org._521taka.multipart.streaming.service.StreamingService;
 import org.apache.tomcat.util.http.fileupload.FileItemIterator;
 import org.apache.tomcat.util.http.fileupload.FileItemStream;
@@ -15,6 +16,8 @@ import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.FilterInputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * ストリーミングコントローラ
@@ -29,16 +32,16 @@ public class StreamingController {
     /** ストリーミング上限サイズ */
     private static final long STREAMING_LIMIT_SIZE = 1024L * 1024L;
 
-    /** ストリーミングサービス */
-    private StreamingService streamingService;
+    /**　アップロードサービス */
+    private Aws3SUploadService uploadService;
 
     @Autowired
-    public StreamingController(final StreamingService streamingService) {
-        this.streamingService = streamingService;
+    public StreamingController(final Aws3SUploadService uploadService) {
+        this.uploadService = uploadService;
     }
 
     @PostMapping("/streaming")
-    public String streaming(final HttpServletRequest request) throws Exception {
+    public Map<String, String> streaming(final HttpServletRequest request) throws Exception {
 
         // マルチパートのリクエストであるか
         if (!ServletFileUpload.isMultipartContent(request)) {
@@ -49,6 +52,7 @@ public class StreamingController {
         final ServletFileUpload servletFileUpload = new ServletFileUpload();
         final FileItemIterator fileItemIterator = servletFileUpload.getItemIterator(request);
 
+        final Map<String, String> uploadResult = new HashMap<>();
         do {
             final FileItemStream itemStream = fileItemIterator.next();
 
@@ -59,10 +63,13 @@ public class StreamingController {
             // ストリーミングサイズの上限をチェックするためのフィルター
             final FilterInputStream filterInputStream = new SizeCheckInputStreamFilter(itemStream.openStream(),
                                                                                        STREAMING_LIMIT_SIZE);
-            this.streamingService.execute(filterInputStream, itemStream.getName());
+
+            // AWS 3Sへアップロードする
+            final String eTag = this.uploadService.execute(filterInputStream, itemStream.getContentType(), 0);
+            uploadResult.put(itemStream.getName(), eTag);
         } while (fileItemIterator.hasNext());
 
-        return "OK";
+        return uploadResult;
     }
 
 }
