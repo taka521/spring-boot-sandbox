@@ -4,6 +4,9 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.amazonaws.services.s3.transfer.Upload;
 import com.taka521.aws.s3.component.AwsS3AuthComponent;
 import com.taka521.aws.s3.config.AmazonS3Setting;
 import com.taka521.aws.s3.utils.StreamUtil;
@@ -49,7 +52,7 @@ public class AwsS3Uploader {
      *
      * @return Eタグ
      */
-    public String encryptUpload(final AwsS3UploaderRequest request) {
+    public String encryptUpload(final AwsS3UploaderRequest request, final boolean wantMultipartUpload) {
         logger.info("Request Param : {}", request.toString());
 
         final AmazonS3 s3 = this.authComponent.authWithEncrypt();
@@ -60,9 +63,26 @@ public class AwsS3Uploader {
 
         final PutObjectRequest putObject = new PutObjectRequest(this.s3Setting.getBucketName(), request.fileName,
                                                                 request.inputStream, metadata);
-        putObject.setGeneralProgressListener(event -> logger.info("transfer size : {}", event.getBytesTransferred()));
+        putObject.setGeneralProgressListener(event -> logger.debug("transfer size : {}", event.getBytesTransferred()));
 
-        final PutObjectResult result = s3.putObject(putObject);
-        return result.getETag();
+        if (wantMultipartUpload) {
+            return this.multipartUpload(s3, putObject);
+        } else {
+            return s3.putObject(putObject).getETag();
+        }
+    }
+
+    private String multipartUpload(final AmazonS3 s3, final PutObjectRequest putObjectRequest) {
+        final TransferManager transferManager = TransferManagerBuilder.standard()
+                .withS3Client(s3)
+                .withMinimumUploadPartSize(5L * 1024L * 1024L)
+                .build();
+        final Upload upload = transferManager.upload(putObjectRequest);
+        try {
+            return upload.waitForUploadResult().getETag();
+        } catch (InterruptedException e) {
+            logger.error(e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
     }
 }
