@@ -4,11 +4,16 @@ import com.amazonaws.AmazonClientException;
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.client.builder.ExecutorFactory;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadRequest;
+import com.amazonaws.services.s3.model.InitiateMultipartUploadResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PartETag;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.UploadPartRequest;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
+import com.amazonaws.services.s3.transfer.internal.UploadPartRequestFactory;
 import com.taka521.aws.s3.component.AwsS3AuthComponent;
 import com.taka521.aws.s3.config.AmazonS3Setting;
 import org.slf4j.Logger;
@@ -16,6 +21,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 /**
@@ -101,5 +110,40 @@ public class AwsS3Uploader {
             logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
+    }
+
+    /*
+        参考になるかもしれないサイト
+        ・https://www.programcreek.com/java-api-examples/index.php?api=com.amazonaws.services.s3.model.UploadPartRequest
+     */
+    private String multipartUpload(final AmazonS3 s3, final InputStream uploadSource, final String key) {
+
+        final List<PartETag> partETags = new ArrayList<>();
+
+        final InitiateMultipartUploadRequest uploadRequest = this.createInitiateMultipartUploadRequest(key);
+        final InitiateMultipartUploadResult uploadResult = s3.initiateMultipartUpload(uploadRequest);
+
+        int partSize = 5 * 1024 * 1024; // 5MB単位で処理
+        int partNumber = 1;
+
+        UploadPartRequest request = new UploadPartRequest()
+                .withBucketName(this.s3Setting.getBucketName())
+                .withPartNumber(partNumber)
+                .withPartSize(partSize);
+
+
+
+        return "";
+    }
+
+    /**
+     * {@link InitiateMultipartUploadRequest}を作成します。
+     *
+     * @param key アップロードファイルのキー
+     *
+     * @return InitiateMultipartUploadRequest
+     */
+    private InitiateMultipartUploadRequest createInitiateMultipartUploadRequest(final String key) {
+        return new InitiateMultipartUploadRequest(this.s3Setting.getBucketName(), key);
     }
 }
