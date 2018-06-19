@@ -1,22 +1,22 @@
 package com.taka521.aws.s3.component.uploader;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.AmazonServiceException;
+import com.amazonaws.client.builder.ExecutorFactory;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.s3.transfer.TransferManager;
 import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.amazonaws.services.s3.transfer.Upload;
 import com.taka521.aws.s3.component.AwsS3AuthComponent;
 import com.taka521.aws.s3.config.AmazonS3Setting;
-import com.taka521.aws.s3.utils.StreamUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.InputStream;
-import java.util.function.Function;
+import java.util.concurrent.Executors;
 
 /**
  * Amazon S3アップローダー
@@ -39,10 +39,6 @@ public class AwsS3Uploader {
         this.s3Setting = s3Setting;
         logger.info("AwsS3AuthComponent : {}", this.authComponent);
         logger.info("AmazonS3Setting : {}", this.s3Setting);
-    }
-
-    public <T> T upload(InputStream source, Function<InputStream, T> uploadFunction) {
-        return uploadFunction.apply(source);
     }
 
     /**
@@ -72,15 +68,36 @@ public class AwsS3Uploader {
         }
     }
 
+    /**
+     * マルチパートアップロードを行います。
+     *
+     * @param s3               S3クライアント
+     * @param putObjectRequest アップロードオブジェクト
+     *
+     * @return Eタグ
+     */
     private String multipartUpload(final AmazonS3 s3, final PutObjectRequest putObjectRequest) {
+        // マルチパートアップロードを行う閾値。この値を超えるとマルチパートアップロードを行う。
+        final long multipartUploadThreshold = 5L * 1024L * 1024L;
+
+        // マルチパートアップロード時の分割サイズ。小さすぎると逆に遅くなってしまうので注意。
+        final long minimumUploadPartSize = Math.max(putObjectRequest.getMetadata().getContentLength() / 4,
+                                                    multipartUploadThreshold);
+
+        // アップロード
         final TransferManager transferManager = TransferManagerBuilder.standard()
                 .withS3Client(s3)
-                .withMinimumUploadPartSize(5L * 1024L * 1024L)
+                .withMultipartUploadThreshold(multipartUploadThreshold)
+                .withMinimumUploadPartSize(minimumUploadPartSize)
+                .withExecutorFactory(() -> Executors.newFixedThreadPool(4))
                 .build();
         final Upload upload = transferManager.upload(putObjectRequest);
         try {
             return upload.waitForUploadResult().getETag();
-        } catch (InterruptedException e) {
+        } catch (AmazonServiceException e) {
+            logger.error(e.getErrorMessage(), e);
+            throw new RuntimeException(e);
+        } catch (AmazonClientException | InterruptedException e) {
             logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
