@@ -30,4 +30,8 @@ data class User(
 
     @Column(name = "updated_at", nullable = false)
     val updatedAt: LocalDateTime = LocalDateTime.now()
-): Serializable
+): Serializable {
+    companion object {
+        val empty = User(id = - 1, name = "", password = "", email = "");
+    }
+}

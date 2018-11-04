@@ -4,3 +4,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/dev
     username: dev
     password: password
+    hikari:
+      maximum-pool-size: 10
+  security:
+    user:
+      name: username
+      password: password

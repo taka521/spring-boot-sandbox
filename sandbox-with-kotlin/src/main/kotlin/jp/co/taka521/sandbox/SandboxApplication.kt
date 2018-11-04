@@ -1,6 +1,5 @@
 package jp.co.taka521.sandbox
 
-import jp.co.taka521.sandbox.entity.User
 import jp.co.taka521.sandbox.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.CommandLineRunner
@@ -18,15 +17,14 @@ class SandboxApplication {
     @Bean
     fun runner(userRepository: UserRepository): CommandLineRunner = CommandLineRunner {
 
-        fun registerUsers(): List<User> {
-            val password = "password"
-            return listOf(User(name = "john", password = password, email = "john@email.com"),
-                          User(name = "bob", password = password, email = "bob@email.com"))
-        }
+//        for(i in 1..10000) {
+//            val username = "test$i"
+//            val password = "password"
+//            val email = "$username@email.com"
+//            userRepository.save(User(name = username, password = password, email = email))
+//        }
 
-        userRepository.saveAll(registerUsers())
-
-        logger.info(userRepository.findAll().toString())
+        // logger.info(userRepository.findAll().toString())
     }
 }
 
