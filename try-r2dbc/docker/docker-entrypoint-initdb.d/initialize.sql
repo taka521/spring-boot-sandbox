@@ -1,0 +1,1 @@
+CREATE TABLE coffee (id SERIAL, name VARCHAR(255));
