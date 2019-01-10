@@ -19,7 +19,7 @@ class DataLoader(
 
         // JPAを利用したCRUD操作
         val useJpa = this.coffeeRepository.deleteAll()
-            .thenMany(Flux.just("スターバックス・コーヒー", "ブルーボトルコーヒー", "ドトール・コーヒー"))
+            .thenMany(Flux.just("ブルーマウンテン", "コロンビア", "モカ"))
             .map { name -> Coffee(name = name) }
             .flatMap { coffee -> this.coffeeRepository.save(coffee) }
             .thenMany(this.coffeeRepository.findAll())
@@ -27,9 +27,9 @@ class DataLoader(
         // DatabaseClientを利用したCRUD操作
         val useDbClient =
             this.txDatabaseClient.inTransaction { db -> db.execute().sql("DELETE FROM coffee").then() }
-                .thenMany(Flux.just(Coffee(name = "STARBUCKS COFFEE")))
+                .thenMany(Flux.just(Coffee(name = "クリスタルマウンテン")))
                 .flatMap { coffee -> this.databaseClient.insert().into(coffee.javaClass).using(coffee).then() }
-                .thenMany(Flux.just("BLUE BOTTLE COFFEE", "DOUTOR COFFEE"))
+                .thenMany(Flux.just("キリマンジャロ", "マンデリン"))
                 .flatMap { name ->
                     this.databaseClient.execute().sql("INSERT INTO coffee(name) VALUES ($1)").bind("$1", name)
                         .then()
